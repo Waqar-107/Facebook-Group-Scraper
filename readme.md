@@ -3,7 +3,7 @@
 scraping public posts of a facebook group using facebook-graph-api
 
 #### Before start coding:
-1. create an app in (https://developers.facebook.com/)[https://developers.facebook.com/]
+1. create an app in https://developers.facebook.com/
 2. generate an access token using this app.
 3. add 2 permissions. 
    * groups_show_list
