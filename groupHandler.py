@@ -44,6 +44,13 @@ def write_json_to_file(data, dir_name):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
+def read_json_file(dir_name):
+    with open(dir_name, 'r', encoding="utf-8") as f:
+        data = json.load(f)
+
+    return data
+
+
 def get_my_groups():
     url = base_url + "me/groups?access_token=" + access_token
 
@@ -104,12 +111,14 @@ def get_group_post(group_id, group_name):
                 break
 
 
-def get_comments_of_group_post(post_id):
+def get_comments_of_group_post(post_id, group_name):
+    post = read_json_file("./posts/" + group_name + "/" + post_id + ".json");
+
     # get the comments. not using limit as param here
     # if params are given then paging will provide next url
     # not sure if it all the comments come if limit is not used
     comment_url = base_url + str(post_id) + "/comments?access_token=" + access_token
-    post = {"comments": []}
+    post["comments"] = []
 
     while True:
         comment_response = send_request(comment_url)
@@ -126,4 +135,4 @@ def get_comments_of_group_post(post_id):
             else:
                 break
 
-    return 0
+    write_json_to_file(post, "./posts/" + group_name + "/" + post_id + ".json")
