@@ -66,7 +66,7 @@ def get_my_groups():
 
 
 def get_group_post(group_id, group_name):
-    limit = 1
+    limit = 100
     url = base_url + group_id + "/feed?limit=" + str(limit) + "&access_token=" + access_token
 
     if not os.path.isdir("./posts"):
@@ -78,12 +78,7 @@ def get_group_post(group_id, group_name):
 
     # get posts, "limit"s at a time and keep calling if there's next
     # write it in a file and save it
-    cnt = 0
     while True:
-        cnt += 1
-        if cnt == 2:
-            break
-
         response = send_request(url)
         if response.status != 200:
             if show_err(response):
@@ -92,7 +87,7 @@ def get_group_post(group_id, group_name):
         else:
             post = {}
             data = json.loads(response.data.decode('utf-8'))
-
+            print(data)
             # data["data"] is an array which has a length of limit which is 1 in this case
             for i in range(len(data["data"])):
                 if "message" not in data["data"][i]:
@@ -103,7 +98,7 @@ def get_group_post(group_id, group_name):
 
                 write_json_to_file(post, "./posts/" + group_name + "/" + post["id"] + ".json")
 
-            if "next" in data["paging"]:
+            if "paging" in data and "next" in data["paging"]:
                 url = data["paging"]["next"]
             else:
                 break
