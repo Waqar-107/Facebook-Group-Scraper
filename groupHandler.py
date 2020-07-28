@@ -1,9 +1,9 @@
 from secret import *
+from util import *
 import urllib3
 import json
 import os
-
-base_url = "https://graph.facebook.com/"
+import time
 
 
 def send_request(url):
@@ -18,8 +18,25 @@ def show_err(response):
 
     print("Error!!! server sent:", response.status)
     print("message", err["error"]["message"])
+
+    if err["error"]["code"] in error_codes:
+        print("fb allows 200 calls per hour, as the limit has been hit, i am going to sleep now for an hour. ciao!")
+        return True
+
     print("Terminating in 3 2 1...")
     exit(0)
+
+
+def good_night():
+    localtime = time.localtime()
+    result = time.strftime("%I:%M:%S %p", localtime)
+    print("Current time is:", result)
+
+    time.sleep(4000)  # sleep for an hour 6 minutes 40 seconds
+
+    localtime = time.localtime()
+    result = time.strftime("%I:%M:%S %p", localtime)
+    print("Waking up at:", result)
 
 
 def write_json_to_file(data, dir_name):
@@ -59,49 +76,59 @@ def get_group_post(group_id, group_name):
     if not os.path.isdir("./posts/" + group_name):
         os.mkdir("./posts/" + group_name)
 
-    # get posts once at a time
-    # get all the comments of that post
+    # get posts, "limit"s at a time and keep calling if there's next
     # write it in a file and save it
+    cnt = 0
     while True:
+        cnt += 1
+        if cnt == 2:
+            break
+
         response = send_request(url)
         if response.status != 200:
-            show_err(response)
+            if show_err(response):
+                good_night()
+                continue
         else:
             post = {}
             data = json.loads(response.data.decode('utf-8'))
 
             # data["data"] is an array which has a length of limit which is 1 in this case
-            if len(data["data"]) == 0:
-                continue
-            if "message" not in data["data"][0]:
-                continue
+            for i in range(len(data["data"])):
+                if "message" not in data["data"][i]:
+                    continue
 
-            post["post"] = data["data"][0]["message"]
-            post["comments"] = []
-            post_id = data["data"][0]["id"]
+                post["post"] = data["data"][i]["message"]
+                post["id"] = data["data"][i]["id"]
 
-            # get the comments. not using limit as param here
-            # if params are given then paging will provide next url
-            # not sure if it all the comments come if limit is not used
-            comment_url = base_url + str(post_id) + "/comments?access_token=" + access_token
-            while True:
-                comment_response = send_request(comment_url)
-                if comment_response.status != 200:
-                    show_err(comment_response)
-                else:
-                    comment_data = json.loads(comment_response.data.decode('utf-8'))
-                    for j in range(len(comment_data["data"])):
-                        if "message" in comment_data["data"][j]:
-                            post["comments"].append(comment_data["data"][j]["message"])
-
-                    if "next" in comment_data["paging"]:
-                        comment_url = comment_data["paging"]["next"]
-                    else:
-                        break
+                write_json_to_file(post, "./posts/" + group_name + "/" + post["id"] + ".json")
 
             if "next" in data["paging"]:
                 url = data["paging"]["next"]
             else:
                 break
 
-            write_json_to_file(post, "./posts/" + group_name + "/" + post_id + ".json")
+
+def get_comments_of_group_post(post_id):
+    # get the comments. not using limit as param here
+    # if params are given then paging will provide next url
+    # not sure if it all the comments come if limit is not used
+    comment_url = base_url + str(post_id) + "/comments?access_token=" + access_token
+    post = {"comments": []}
+
+    while True:
+        comment_response = send_request(comment_url)
+        if comment_response.status != 200:
+            show_err(comment_response)
+        else:
+            comment_data = json.loads(comment_response.data.decode('utf-8'))
+            for j in range(len(comment_data["data"])):
+                if "message" in comment_data["data"][j]:
+                    post["comments"].append(comment_data["data"][j]["message"])
+
+            if "next" in comment_data["paging"]:
+                comment_url = comment_data["paging"]["next"]
+            else:
+                break
+
+    return 0
