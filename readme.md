@@ -10,12 +10,29 @@ scraping public posts of a facebook group using facebook-graph-api
    * groups_access_member_info
 4. become the admin of the group. without being admin the posts are not 
 accessible and the server will reply with a 403 :) 
+5. as we have to use sleep during the execution, we should extend the access_token, else ot will
+expire within few hours. you can do this by opening the access token in debug mode. 
    
    
 #### Codes
-1. secret.py - contains the access token and kept in the .gitignore file for obvious reasons.
+1. secret.py - contains the access token and kept in the .gitignore file for 
+obvious reasons. also contains a variable called required_group_name that is the groups data we want to fetch
 2. groupHandler.py - has the main codes to get all the groups the user is in and group posts.
- * 
+    * send_request(url) - takes the url as a string, returns the response.
+    * show_err(response) - takes the response object. if limit over then return true 
+    else exits.
+    * good_night() - executes sleep().
+    * write_json_to_file(data, dir_name) - takes a dictionary data and writes in json 
+    format in the specified file.
+    * read_json_file(dir_name) - reads the specified file returns a dictionary.
+    * get_my_groups() - returns array of dictionaries, containing group name and id, the 
+    groups where the use is a member.
+    * get_group_post(group_id, group_name) - takes group-id and name and for each post 
+    creates a json file and write the post there. stores the file in a folder that's 
+    name is the group-name and file name is the post-id.
+    * get_comments_of_group_post(post_id, group_name) - takes post id and the group name, 
+    fetches comments of that post and writes on that same file where the main post was 
+    written.
 3. main.py - the driver
 
 
