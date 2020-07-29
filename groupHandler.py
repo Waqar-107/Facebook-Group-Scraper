@@ -5,10 +5,16 @@ import json
 import os
 import time
 
+logFile = open("log.txt", "w");
+count = 0
+
 
 def send_request(url):
+    global count
+
     http = urllib3.PoolManager()
     response = http.request("GET", url)
+    count += 1
 
     return response
 
@@ -16,27 +22,32 @@ def send_request(url):
 def show_err(response):
     err = json.loads(response.data.decode('utf-8'))
 
-    print("Error!!! server sent:", response.status)
-    print("message", err["error"]["message"])
+    logFile.write("Error!!! server sent: " + str(response.status) + "\n")
+    logFile.write("message: " + err["error"]["message"] + "\n")
 
     if err["error"]["code"] in error_codes:
-        print("fb allows 200 calls per hour, as the limit has been hit, i am going to sleep now for an hour. ciao!")
         return True
 
-    print("Terminating in 3 2 1...")
+    logFile.write("Terminating in 3 2 1...\n")
     exit(0)
 
 
-def good_night():
-    localtime = time.localtime()
-    result = time.strftime("%I:%M:%S %p", localtime)
-    print("Current time is:", result)
-
-    time.sleep(4000)  # sleep for an hour 6 minutes 40 seconds
+def good_night(sec):
+    global count
 
     localtime = time.localtime()
     result = time.strftime("%I:%M:%S %p", localtime)
-    print("Waking up at:", result)
+
+    logFile.write("limit over after " + str(count) + "requests\n")
+    logFile.write("Current time is " + result + "\n")
+
+    time.sleep(sec)
+
+    localtime = time.localtime()
+    result = time.strftime("%I:%M:%S %p", localtime)
+    logFile.write("Waking up at " + result + "\n")
+
+    count = 0
 
 
 def write_json_to_file(data, dir_name):
@@ -72,8 +83,7 @@ def get_my_groups():
     return my_groups
 
 
-def get_group_post(group_id, group_name):
-    limit = 100
+def get_group_post(group_id, group_name, sleep_time, limit):
     url = base_url + group_id + "/feed?limit=" + str(limit) + "&access_token=" + access_token
 
     if not os.path.isdir("./posts"):
@@ -89,7 +99,7 @@ def get_group_post(group_id, group_name):
         response = send_request(url)
         if response.status != 200:
             if show_err(response):
-                good_night()
+                good_night(sleep_time)
                 continue
         else:
             post = {}
@@ -111,7 +121,7 @@ def get_group_post(group_id, group_name):
                 break
 
 
-def get_comments_of_group_post(post_id, group_name):
+def get_comments_of_group_post(post_id, group_name, sleep_time):
     post = read_json_file("./posts/" + group_name + "/" + post_id + ".json");
 
     # get the comments. not using limit as param here
@@ -123,7 +133,8 @@ def get_comments_of_group_post(post_id, group_name):
     while True:
         comment_response = send_request(comment_url)
         if comment_response.status != 200:
-            show_err(comment_response)
+            if show_err(comment_response):
+                good_night(sleep_time)
         else:
             comment_data = json.loads(comment_response.data.decode('utf-8'))
             for j in range(len(comment_data["data"])):

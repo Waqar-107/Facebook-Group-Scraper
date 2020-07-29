@@ -21,18 +21,19 @@ obvious reasons. also contains a variable called required_group_name that is the
     * send_request(url) - takes the url as a string, returns the response.
     * show_err(response) - takes the response object. if limit over then return true 
     else exits.
-    * good_night() - executes sleep().
+    * good_night(sec) - executes sleep() for sec seconds.
     * write_json_to_file(data, dir_name) - takes a dictionary data and writes in json 
     format in the specified file.
     * read_json_file(dir_name) - reads the specified file returns a dictionary.
     * get_my_groups() - returns array of dictionaries, containing group name and id, the 
     groups where the use is a member.
-    * get_group_post(group_id, group_name) - takes group-id and name and for each post 
+    * get_group_post(group_id, group_name, limit, sleep_time) - takes group-id and name and sleep_time and for each post 
     creates a json file and write the post there. stores the file in a folder that's 
-    name is the group-name and file name is the post-id.
-    * get_comments_of_group_post(post_id, group_name) - takes post id and the group name, 
-    fetches comments of that post and writes on that same file where the main post was 
-    written.
+    name is the group-name and file name is the post-id. sleeps for sleep_time if limit is over.
+    * get_comments_of_group_post(post_id, group_name, sleep_time) - takes post id, sleep_time and the group name, 
+    fetches comments of that post and writes on that same file where the main post was written.
+    sleeps for sleep_time if limit is over.
+    can be called inside a loop.
 3. main.py - the driver
 
 
